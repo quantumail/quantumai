@@ -6,11 +6,11 @@ const Groq = require("groq-sdk");
 
 const app = express();
 
-// ===== MIDDLEWARE =====
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-// ===== TEST ROUTES (404 ÇÖZER) =====
+// Test routes
 app.get("/", (req, res) => {
   res.send("QuantumAI API çalışıyor 🚀");
 });
@@ -19,120 +19,128 @@ app.get("/api/ask", (req, res) => {
   res.send("API çalışıyor ✅ (GET test)");
 });
 
-// ===== GROQ =====
+// Port
+const PORT = process.env.PORT || 5000;
+
+// Groq
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY
 });
 
-// ===== PORT =====
-const PORT = process.env.PORT || 5000;
-
-// ===== MONGO (HATA VERSE BİLE ÇALIŞSIN) =====
-mongoose.connect(process.env.MONGO_URI)
+// MongoDB bağlantısı
+mongoose
+  .connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB bağlandı ✅"))
-  .catch(err => console.log("Mongo HATA ❌:", err.message));
+  .catch((err) => console.log("Mongo HATA ❌:", err.message));
 
-// ===== SCHEMA =====
-const QuestionSchema = new mongoose.Schema({
-  // 👇 BURAYA EKLE
-const UserSchema = new mongoose.Schema({
-  ip: String,
-  count: { type: Number, default: 0 }
-});
-
-const User = mongoose.model("User", UserSchema);
-  question: String,
-  extra: String,
-  answer: String
-}, { timestamps: true });
+// Soru kayıt şeması
+const QuestionSchema = new mongoose.Schema(
+  {
+    question: String,
+    extra: String,
+    answer: String,
+  },
+  { timestamps: true }
+);
 
 const Question = mongoose.model("Question", QuestionSchema);
 
-// ===== ANA API =====
+// Kullanıcı limit şeması
+const UserSchema = new mongoose.Schema(
+  {
+    ip: { type: String, required: true, unique: true },
+    count: { type: Number, default: 0 },
+  },
+  { timestamps: true }
+);
+
+const User = mongoose.model("User", UserSchema);
+
+// Ana AI endpoint
 app.post("/api/ask", async (req, res) => {
   try {
     const { question, extra } = req.body;
 
-    // 👇 Kullanıcı IP al
-    const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+    if (!question || !question.trim()) {
+      return res.status(400).json({ answer: "Soru boş olamaz ❌" });
+    }
 
-    // 👇 DB'den kullanıcıyı bul
+    // Kullanıcı IP al
+    const forwarded = req.headers["x-forwarded-for"];
+    const ip = forwarded
+      ? forwarded.split(",")[0].trim()
+      : req.socket.remoteAddress || "unknown";
+
+    // Kullanıcıyı bul / oluştur
     let user = await User.findOne({ ip });
 
     if (!user) {
-      user = new User({ ip });
+      user = new User({ ip, count: 0 });
       await user.save();
     }
 
-    // 💰 LIMIT KONTROL
+    // 5 soru limiti
     if (user.count >= 5) {
-      return res.json({ answer: "Limit doldu 💰 Premium almanız gerekiyor." });
+      return res.json({
+        answer: "Limit doldu 💰 Premium almanız gerekiyor.",
+      });
     }
 
-    // 👉 Sayaç artır
+    // Sayaç artır
     user.count += 1;
     await user.save();
 
-    // 🤖 AI CEVAP
-    const chat = await groq.chat.completions.create({
-      messages: [
-        { role: "user", content: question + " " + (extra || "") }
-      ],
-      model: "llama-3.1-8b-instant"
-    });
-
-    const answer = chat.choices[0].message.content;
-
-    res.json({ answer });
-
-  } catch (err) {
-    console.log(err);
-    res.json({ answer: "Sunucu hatası ❌" });
-  }
-});
-  try {
-    const { question, extra } = req.body;
-
-    if (!question) {
-      return res.json({ answer: "Soru boş ❌" });
+    // API key kontrol
+    if (!process.env.GROQ_API_KEY) {
+      return res.json({
+        answer: "GROQ API key bulunamadı ❌",
+      });
     }
-
-    console.log("AI isteği geldi...");
 
     let answer = "";
 
     try {
       const chat = await groq.chat.completions.create({
         messages: [
-          { role: "user", content: question + " " + (extra || "") }
+          {
+            role: "user",
+            content: `${question} ${extra || ""}`.trim(),
+          },
         ],
-        model: "llama-3.1-8b-instant"
+        model: "llama-3.1-8b-instant",
       });
 
-      answer = chat.choices?.[0]?.message?.content || "Cevap alınamadı";
-
+      answer =
+        chat?.choices?.[0]?.message?.content ||
+        "Cevap alınamadı ⚠️";
     } catch (err) {
-      console.log("GROQ HATA:", err.message);
-      answer = "AI geçici olarak çalışmıyor ⚠️";
+      console.log("GROQ HATA ❌:", err.message);
+      return res.json({
+        answer: "AI geçici olarak çalışmıyor ⚠️",
+      });
     }
 
-    // 🔥 MONGO KAYIT (İSTERSEN AÇ)
+    // Soru-cevap kaydı
     try {
-      const newData = new Question({ question, extra, answer });
-      // await newData.save(); // İSTERSEN AÇ
+      const newData = new Question({
+        question,
+        extra,
+        answer,
+      });
+      await newData.save();
     } catch (err) {
-      console.log("Mongo kayıt hatası:", err.message);
+      console.log("Mongo kayıt hatası ❌:", err.message);
     }
 
-    res.json({ answer });
-
+    return res.json({ answer });
   } catch (err) {
-    console.log("GENEL HATA:", err.message);
-    res.json({ answer: "Sunucu hatası ❌" });
+    console.log("GENEL SUNUCU HATASI ❌:", err.message);
+    return res.status(500).json({
+      answer: "Sunucu hatası ❌",
+    });
   }
 });
 
-// ===== SERVER =====
 app.listen(PORT, "0.0.0.0", () => {
-  console.log("Server çalışıyor 🚀 PORT:", PORT);
+  console.log(`Server çalışıyor 🚀 PORT: ${PORT}`);
 });
