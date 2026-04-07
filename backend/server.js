@@ -92,16 +92,11 @@ app.post("/api/ask", async (req, res) => {
     await user.save();
 
     // API key kontrol
-    if (!process.env.GROQ_API_KEY) {
-      return res.json({
-        answer: "GROQ API key bulunamadı ❌",
-      });
-    }
+   if (!process.env.GROQ_API_KEY) {
+  return res.json({ answer: "API key yok ❌" });
+}
 
-    let answer = "";
-
-    try {
-      const chat = await groq.chat.completions.create({
+const chat = await groq.chat.completions.create({
         messages: [
           {
             role: "user",
