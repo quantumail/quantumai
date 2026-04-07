@@ -27,6 +27,7 @@ const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY
 });
 
+console.log("GROQ KEY VAR MI:", !!process.env.GROQ_API_KEY);
 // MongoDB bağlantısı
 mongoose
   .connect(process.env.MONGO_URI)
