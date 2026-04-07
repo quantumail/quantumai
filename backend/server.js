@@ -34,6 +34,13 @@ mongoose.connect(process.env.MONGO_URI)
 
 // ===== SCHEMA =====
 const QuestionSchema = new mongoose.Schema({
+  // 👇 BURAYA EKLE
+const UserSchema = new mongoose.Schema({
+  ip: String,
+  count: { type: Number, default: 0 }
+});
+
+const User = mongoose.model("User", UserSchema);
   question: String,
   extra: String,
   answer: String
@@ -43,6 +50,46 @@ const Question = mongoose.model("Question", QuestionSchema);
 
 // ===== ANA API =====
 app.post("/api/ask", async (req, res) => {
+  try {
+    const { question, extra } = req.body;
+
+    // 👇 Kullanıcı IP al
+    const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+
+    // 👇 DB'den kullanıcıyı bul
+    let user = await User.findOne({ ip });
+
+    if (!user) {
+      user = new User({ ip });
+      await user.save();
+    }
+
+    // 💰 LIMIT KONTROL
+    if (user.count >= 5) {
+      return res.json({ answer: "Limit doldu 💰 Premium almanız gerekiyor." });
+    }
+
+    // 👉 Sayaç artır
+    user.count += 1;
+    await user.save();
+
+    // 🤖 AI CEVAP
+    const chat = await groq.chat.completions.create({
+      messages: [
+        { role: "user", content: question + " " + (extra || "") }
+      ],
+      model: "llama-3.1-8b-instant"
+    });
+
+    const answer = chat.choices[0].message.content;
+
+    res.json({ answer });
+
+  } catch (err) {
+    console.log(err);
+    res.json({ answer: "Sunucu hatası ❌" });
+  }
+});
   try {
     const { question, extra } = req.body;
 
