@@ -150,24 +150,7 @@ app.post("/api/ask", async (req, res) => {
       : req.socket.remoteAddress || "unknown";
 
     // Kullanıcıyı bul / oluştur
-    let user = await User.findOne({ ip });
-
-    if (!user) {
-      user = new User({ ip, count: 0 });
-      await user.save();
-    }
-
-    // 5 soru limiti
-    if (user.count >= 5) {
-      return res.json({
-        answer: "Limit doldu 💰 Premium almanız gerekiyor.",
-      });
-    }
-
-    // Sayaç artır
-    user.count += 1;
-    await user.save();
-
+    
     // API key kontrol
    if (!process.env.GROQ_API_KEY) {
   return res.json({ answer: "API key yok ❌" });
