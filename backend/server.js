@@ -66,6 +66,43 @@ app.post("/api/ask", async (req, res) => {
       return res.json({ answer: "Soru boş ❌" });
     }
 
+    // 🔥 API KEY kontrol
+    if (!process.env.GROQ_API_KEY) {
+      return res.json({ answer: "API key yok ❌" });
+    }
+
+    // 🔥 AI
+    let answer = "";
+
+    try {
+      const chat = await groq.chat.completions.create({
+        messages: [
+          { role: "user", content: question + " " + (extra || "") }
+        ],
+        model: "llama-3.1-8b-instant"
+      });
+
+      answer = chat.choices[0].message.content;
+
+    } catch (err) {
+      console.log("GROQ HATA:", err.message);
+      return res.json({ answer: "AI geçici olarak çalışmıyor ⚠️" });
+    }
+
+    res.json({ answer });
+
+  } catch (err) {
+    console.log("GENEL HATA:", err.message);
+    res.json({ answer: "Sunucu hatası ❌" });
+  }
+});
+  try {
+    const { question, extra } = req.body;
+
+    if (!question) {
+      return res.json({ answer: "Soru boş ❌" });
+    }
+
     // 🔥 API KEY KONTROL
     if (!process.env.GROQ_API_KEY) {
       return res.json({ answer: "API key yok ❌" });
