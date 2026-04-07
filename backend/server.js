@@ -128,7 +128,7 @@ app.post("/api/ask", async (req, res) => {
         extra,
         answer,
       });
-      await newData.save();
+      // await newData.save();
     } catch (err) {
       console.log("Mongo kayıt hatası ❌:", err.message);
     }
