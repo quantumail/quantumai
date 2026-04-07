@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QuantumAI</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #050816;
+      --panel: rgba(10, 16, 34, 0.58);
+      --panel-strong: rgba(14, 22, 46, 0.8);
+      --line: rgba(255,255,255,0.10);
+      --text: #f5f7ff;
+      --muted: #9fb0d8;
+      --accent: #7c3aed;
+      --accent2: #06b6d4;
+      --glow: 0 0 30px rgba(124, 58, 237, 0.28);
+      --radius: 24px;
+    }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: radial-gradient(circle at top, #081226 0%, #050816 55%, #02040d 100%);
+      color: var(--text);
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    #bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      display: block;
+    }
+
+    .noise {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      opacity: 0.06;
+      background-image:
+        radial-gradient(circle at 20% 20%, white 0.7px, transparent 0.8px),
+        radial-gradient(circle at 80% 30%, white 0.7px, transparent 0.8px),
+        radial-gradient(circle at 60% 70%, white 0.7px, transparent 0.8px),
+        radial-gradient(circle at 35% 85%, white 0.7px, transparent 0.8px);
+      background-size: 240px 240px;
+    }
+
+    .page {
+      position: relative;
+      z-index: 2;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 40px;
+      padding: 40px;
+    }
+
+    .hero {
+      width: min(520px, 100%);
+      align-self: flex-start;
+      padding-top: 18px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .brand-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      box-shadow: 0 0 20px rgba(6, 182, 212, 0.55);
+      animation: pulse 2.2s infinite ease-in-out;
+    }
+
+    .brand h1 {
+      font-size: clamp(42px, 6vw, 72px);
+      line-height: 1;
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      text-shadow: 0 0 25px rgba(124, 58, 237, 0.25);
+    }
+
+    .brand h1 span {
+      background: linear-gradient(135deg, #ffffff, #8be9fd 45%, #c084fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .tag {
+      display: inline-block;
+      margin-bottom: 18px;
+      padding: 10px 16px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.04);
+      border-radius: 999px;
+      color: #cbd5f5;
+      font-size: 14px;
+      backdrop-filter: blur(10px);
+    }
+
+    .hero p {
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.75;
+      max-width: 500px;
+      margin-bottom: 24px;
+    }
+
+    .hero-stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .stat {
+      padding: 12px 16px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      backdrop-filter: blur(12px);
+      color: #dbe7ff;
+      font-size: 14px;
+    }
+
+    .panel {
+      width: min(520px, 100%);
+      background: linear-gradient(180deg, rgba(12,19,41,0.78), rgba(7,12,28,0.88));
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 28px;
+      backdrop-filter: blur(18px);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45), var(--glow);
+      overflow: hidden;
+    }
+
+    .panel-top {
+      padding: 22px 22px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .panel-title {
+      font-size: 22px;
+      font-weight: 700;
+    }
+
+    .panel-mini {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: #dbe7ff;
+      font-size: 13px;
+    }
+
+    .status::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 12px #22c55e;
+    }
+
+    .chat-shell {
+      padding: 18px 18px 12px;
+    }
+
+    .bubble {
+      border-radius: 22px;
+      padding: 16px 18px;
+      margin-bottom: 14px;
+      line-height: 1.75;
+      border: 1px solid rgba(255,255,255,0.06);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+      white-space: pre-wrap;
+    }
+
+    .bubble-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+      opacity: 0.75;
+    }
+
+    .bubble.user {
+      background: linear-gradient(135deg, rgba(124,58,237,0.2), rgba(6,182,212,0.1));
+      margin-left: 48px;
+    }
+
+    .bubble.ai {
+      background: rgba(255,255,255,0.045);
+      margin-right: 48px;
+      color: #dbe7ff;
+    }
+
+    .composer {
+      padding: 14px 18px 20px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .field {
+      position: relative;
+    }
+
+    .field input,
+    .field textarea {
+      width: 100%;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.05);
+      color: var(--text);
+      border-radius: 18px;
+      padding: 16px 16px 16px 50px;
+      outline: none;
+      font-size: 15px;
+      transition: 0.25s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .field textarea {
+      min-height: 92px;
+      resize: none;
+    }
+
+    .field input:focus,
+    .field textarea:focus {
+      border-color: rgba(124,58,237,0.5);
+      box-shadow: 0 0 0 4px rgba(124,58,237,0.12);
+      background: rgba(255,255,255,0.07);
+    }
+
+    .field span {
+      position: absolute;
+      left: 16px;
+      top: 15px;
+      font-size: 18px;
+      opacity: 0.85;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      flex: 1;
+      min-width: 150px;
+      border: none;
+      border-radius: 18px;
+      padding: 15px 18px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.25s ease;
+    }
+
+    .btn.primary {
+      color: #fff;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      box-shadow: 0 14px 30px rgba(124,58,237,0.28);
+    }
+
+    .btn.secondary {
+      color: #dbe7ff;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .typing {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .typing i {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #9fb0d8;
+      display: inline-block;
+      animation: blink 1s infinite ease-in-out;
+    }
+
+    .typing i:nth-child(2) { animation-delay: 0.15s; }
+    .typing i:nth-child(3) { animation-delay: 0.3s; }
+
+    @keyframes blink {
+      0%, 80%, 100% { opacity: 0.3; transform: translateY(0); }
+      40% { opacity: 1; transform: translateY(-3px); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 0.9; }
+      50% { transform: scale(1.2); opacity: 1; }
+    }
+
+    @media (max-width: 980px) {
+      body { overflow: auto; }
+      .page {
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
+        padding: 24px;
+      }
+      .hero, .panel { width: 100%; }
+      .hero { padding-top: 0; }
+      .brand h1 { font-size: 48px; }
+      .bubble.user, .bubble.ai { margin-left: 0; margin-right: 0; }
+      #bg { position: fixed; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="bg"></canvas>
+  <div class="noise"></div>
+
+  <main class="page">
+    <section class="hero">
+      <div class="tag">Yeni nesil yapay zeka deneyimi</div>
+      <div class="brand">
+        <img src="logo.png" style="width:50px;height:50px;border-radius:50%;margin-right:10px;">
+        <div class="brand-dot"></div>
+        <h1><span>QuantumAI</span></h1>
+      </div>
+      <p>
+        Sor, öğren, keşfet. Güçlü arka plan animasyonu, modern sohbet paneli ve premium görünüm ile kendi yapay zeka platformunun ilk sürümü.
+      </p>
+      <div class="hero-stats">
+        <div class="stat">Canlı küre animasyonu</div>
+        <div class="stat">Mouse etkileşimi</div>
+        <div class="stat">Modern sohbet alanı</div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-top">
+        <div>
+          <div class="panel-title">Quantum Chat</div>
+          <div class="panel-mini">Akıllı cevap üretim ekranı</div>
+        </div>
+        <div class="status">Aktif</div>
+      </div>
+
+      <div class="chat-shell">
+        <div class="bubble user" id="userBubble">
+          <div class="bubble-label">Kullanıcı</div>
+          Henüz soru yazılmadı.
+        </div>
+
+        <div class="bubble ai" id="aiBubble">
+          <div class="bubble-label">QuantumAI</div>
+          Burada cevap görünecek.
+        </div>
+      </div>
+
+      <div class="composer">
+        <div class="field">
+          <span>✦</span>
+          <input id="question" type="text" placeholder="Sorunu yaz..." />
+        </div>
+
+        <div class="field">
+          <span>✎</span>
+          <textarea id="extra" placeholder="Ek bilgi ver... Örnek: kısa anlat, adım adım yaz, profesyonel olsun..."></textarea>
+        </div>
+
+        <div class="actions">
+          <button class="btn primary" onclick="answerQuestion()">Cevap Üret</button>
+          <button class="btn secondary" onclick="fillExample()">Örnek Soru</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+<div style="position:fixed;bottom:20px;right:20px;font-size:13px;color:#9fb0d8;opacity:0.8;">
+  QuantumAI • Yusuf Keskin tarafından geliştirildi. Geleceğin yapay zekasına açılan kapı.
+</div>
+
+  <script>
+    const canvas = document.getElementById('bg');
+    const ctx = canvas.getContext('2d');
+
+    let w = canvas.width = window.innerWidth;
+    let h = canvas.height = window.innerHeight;
+    let mouseX = 0;
+    let mouseY = 0;
+
+    const sphere = {
+      radius: Math.min(w, h) * 0.22,
+      points: []
+    };
+
+    function createSpherePoints() {
+      sphere.points = [];
+      const count = window.innerWidth < 768 ? 520 : 900;
+      sphere.radius = Math.min(w, h) * (window.innerWidth < 768 ? 0.18 : 0.22);
+
+      for (let i = 0; i < count; i++) {
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos((Math.random() * 2) - 1);
+        const r = sphere.radius;
+
+        sphere.points.push({
+          x: r * Math.sin(phi) * Math.cos(theta),
+          y: r * Math.cos(phi),
+          z: r * Math.sin(phi) * Math.sin(theta),
+          size: Math.random() * 2.3 + 0.6,
+          offset: Math.random() * Math.PI * 2
+        });
+      }
+    }
+
+    createSpherePoints();
+
+    function resize() {
+      w = canvas.width = window.innerWidth;
+      h = canvas.height = window.innerHeight;
+      createSpherePoints();
+    }
+
+    window.addEventListener('resize', resize);
+
+    window.addEventListener('mousemove', (e) => {
+      mouseX = (e.clientX / w - 0.5) * 2;
+      mouseY = (e.clientY / h - 0.5) * 2;
+    });
+
+    function rotateY(x, z, angle) {
+      return {
+        x: x * Math.cos(angle) - z * Math.sin(angle),
+        z: x * Math.sin(angle) + z * Math.cos(angle)
+      };
+    }
+
+    function rotateX(y, z, angle) {
+      return {
+        y: y * Math.cos(angle) - z * Math.sin(angle),
+        z: y * Math.sin(angle) + z * Math.cos(angle)
+      };
+    }
+
+    function drawBackground() {
+      ctx.clearRect(0, 0, w, h);
+
+      const grad = ctx.createRadialGradient(w * 0.5, h * 0.4, 0, w * 0.5, h * 0.4, Math.max(w, h) * 0.65);
+      grad.addColorStop(0, 'rgba(15,25,55,0.22)');
+      grad.addColorStop(1, 'rgba(2,4,13,0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+
+      const cx = w * 0.6;
+      const cy = h * 0.5;
+      const time = Date.now() * 0.0008;
+
+      const sorted = [];
+
+      for (const p of sphere.points) {
+        let rx = p.x;
+        let ry = p.y;
+        let rz = p.z;
+
+        const rotY = rotateY(rx, rz, time + mouseX * 0.9 + p.offset * 0.02);
+        rx = rotY.x; rz = rotY.z;
+
+        const rotX = rotateX(ry, rz, time * 0.7 + mouseY * 0.55);
+        ry = rotX.y; rz = rotX.z;
+
+        const perspective = 700 / (700 + rz);
+        const px = cx + rx * perspective;
+        const py = cy + ry * perspective;
+        const size = p.size * perspective * 1.45;
+        const hue = 190 + Math.sin(time * 2 + p.offset) * 70 + (rz / sphere.radius) * 40;
+
+        sorted.push({ px, py, rz, size, hue, alpha: 0.25 + perspective * 0.9 });
+      }
+
+      sorted.sort((a, b) => a.rz - b.rz);
+
+      for (const p of sorted) {
+        ctx.beginPath();
+        ctx.arc(p.px, p.py, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${p.hue}, 100%, 62%, ${p.alpha})`;
+        ctx.shadowBlur = 18;
+        ctx.shadowColor = `hsla(${p.hue}, 100%, 62%, 0.55)`;
+        ctx.fill();
+      }
+
+      ctx.shadowBlur = 0;
+    }
+
+    function animate() {
+      drawBackground();
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+
+    const knowledge = [
+      { q: 'merhaba', a: 'Merhaba. QuantumAI aktif durumda. Sana proje, tasarım, yazılım ve fikir geliştirme konularında yardımcı olabilirim.' },
+      { q: 'html nedir', a: 'HTML, web sayfasının iskeletini oluşturan işaretleme dilidir. Başlıklar, metinler, kutular ve genel yapı HTML ile kurulur.' },
+      { q: 'css nedir', a: 'CSS, sayfanın görünümünü düzenler. Renk, boşluk, buton tasarımı, animasyon ve responsive yapı CSS ile yapılır.' },
+      { q: 'javascript nedir', a: 'JavaScript, web sitesine etkileşim kazandırır. Buton tıklama, veri işleme, dinamik yazı ve animasyon kontrolü için kullanılır.' },
+      { q: 'yapay zeka nedir', a: 'Yapay zeka, bilgisayar sistemlerinin öğrenme, analiz etme ve insan benzeri sonuçlar üretme yeteneği kazanmasını sağlayan teknolojidir.' },
+      { q: 'quantumai nedir', a: 'QuantumAI, modern görünümlü bir yapay zeka platformu fikrinin demo sürümüdür. Bu yapı daha sonra gerçek backend ve model bağlantısı ile büyütülebilir.' }
+    ];
+
+    function normalize(text) {
+      return text.toLowerCase()
+        .replace(/ç/g,'c').replace(/ğ/g,'g').replace(/ı/g,'i').replace(/ö/g,'o').replace(/ş/g,'s').replace(/ü/g,'u')
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    function getAnswer(question, extra) {
+      const q = normalize(question);
+      let best = null;
+      let bestScore = 0;
+
+      for (const item of knowledge) {
+        let score = 0;
+        const base = normalize(item.q + ' ' + item.a);
+        q.split(' ').forEach(word => {
+          if (word && base.includes(word)) score += word.length > 4 ? 3 : 1;
+        });
+        if (q === normalize(item.q)) score += 10;
+        if (score > bestScore) {
+          bestScore = score;
+          best = item;
+        }
+      }
+
+      if (best) {
+        return `${best.a}\n\n${extra ? 'Ek notuna göre cevap daha sonra özelleştirilebilir: ' + extra : 'İstersen bunu daha kısa, daha profesyonel veya adım adım hale getirebilirim.'}`;
+      }
+
+      return `Bu soru için henüz hazır kayıt yok.\n\nSoru: ${question}\n${extra ? 'Ek bilgi: ' + extra + '\n\n' : ''}QuantumAI şu an demo modunda çalışıyor. Sonraki aşamada gerçek AI API bağlanarak tamamen dinamik cevaplar üretilebilir.`;
+    }
+
+    function typeText(el, text, speed = 18) {
+      el.textContent = '';
+      let i = 0;
+      const timer = setInterval(() => {
+        el.textContent += text.charAt(i);
+        i++;
+        if (i >= text.length) clearInterval(timer);
+      }, speed);
+    }
+
+    function answerQuestion() {
+      const question = document.getElementById('question').value.trim();
+      const extra = document.getElementById('extra').value.trim();
+      const userBubble = document.getElementById('userBubble');
+      const aiBubble = document.getElementById('aiBubble');
+
+      if (!question) {
+        aiBubble.innerHTML = '<div class="bubble-label">QuantumAI</div>Önce bir soru yazman gerekiyor.';
+        return;
+      }
+
+      userBubble.innerHTML = `<div class="bubble-label">Kullanıcı</div>${question}${extra ? '\n\nEk bilgi: ' + extra : ''}`;
+      aiBubble.innerHTML = '<div class="bubble-label">QuantumAI</div><span class="typing"><i></i><i></i><i></i></span>';
+
+      setTimeout(() => {
+  fetch('http://localhost:5000/api/ask', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ question, extra })
+  })
+  .then(res => res.json())
+  .then(data => {
+    const response = data.answer;
+    aiBubble.innerHTML = '<div class="bubble-label">QuantumAI</div><div id="typedAnswer"></div>';
+    typeText(document.getElementById('typedAnswer'), response, 16);
+  })
+  .catch(() => {
+    const response = getAnswer(question, extra);
+    aiBubble.innerHTML = '<div class="bubble-label">QuantumAI</div><div id="typedAnswer"></div>';
+    typeText(document.getElementById('typedAnswer'), response, 16);
+  });
+}, 950);
+    }
+
+    function fillExample() {
+      document.getElementById('question').value = 'Yapay zeka nedir';
+      document.getElementById('extra').value = 'Kısa ve profesyonel anlat.';
+      answerQuestion();
+    }
+  </script>
+</body>
+</html>

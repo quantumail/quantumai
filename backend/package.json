@@ -1,0 +1,22 @@
+{
+  "name": "quantumai-server",
+  "version": "1.0.0",
+  "description": "QuantumAI backend",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@google/genai": "^1.48.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.1",
+    "express": "^4.22.1",
+    "groq-sdk": "^1.1.2",
+    "mongoose": "^9.4.1",
+    "openai": "^6.33.0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
