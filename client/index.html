@@ -590,14 +590,14 @@
       userBubble.innerHTML = `<div class="bubble-label">Kullanıcı</div>${question}${extra ? '\n\nEk bilgi: ' + extra : ''}`;
       aiBubble.innerHTML = '<div class="bubble-label">QuantumAI</div><span class="typing"><i></i><i></i><i></i></span>';
 
-      setTimeout(() => {
-  fetch('http://localhost:5000/api/ask', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ question, extra })
-  })
+     setTimeout(() => {
+  fetch("https://quantumai-api.onrender.com/api/ask", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({ question, extra })
+})
   .then(res => res.json())
   .then(data => {
     const response = data.answer;
